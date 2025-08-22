@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: your-app-web
+    runtime: python
+    buildCommand: |
+      pip install -r requirements/production.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+    startCommand: gunicorn eventnest.wsgi:application
+    envVars:
+      # Non-sensitive variables - can be in YAML
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DJANGO_SETTINGS_MODULE

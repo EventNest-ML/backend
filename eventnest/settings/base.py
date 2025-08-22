@@ -1,7 +1,5 @@
 from pathlib import Path
 import environ
-import os
-import requests
 from decouple import config
 
 env = environ.Env(
@@ -208,7 +206,7 @@ SOCIALACCOUNT_ADAPTER = 'apps.authentication.adapters.CustomSocialAccountAdapter
 
 # Social account settings
 SOCIALACCOUNT_AUTO_SIGNUP = True
-SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Require email verification for social accounts
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_STORE_TOKENS = True
 
