@@ -1,8 +1,11 @@
+import re
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 from djoser.serializers import UserCreateSerializer as DjoserUserCreateSerializer
-import re
+from django.contrib.auth import get_user_model
+from djoser.utils import decode_uid
+from djoser.conf import settings as djoser_settings
 
 User = get_user_model()
 
@@ -135,3 +138,49 @@ class CustomUserSerializer(UserSerializer):
             'profile_picture', 'date_joined', 'is_active'
         )
         read_only_fields = ('id', 'date_joined')
+
+
+
+class CustomResendActivationSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False)
+    uid = serializers.CharField(required=False)
+    
+    def validate(self, attrs):
+        email = attrs.get('email')
+        uid = attrs.get('uid')
+        
+        if not email and not uid:
+            raise serializers.ValidationError(
+                "Either email or uid must be provided."
+            )
+        
+        user = None
+        
+        # If UID is provided, find user by UID
+        if uid:
+            try:
+                user_id = decode_uid(uid)
+                user = User.objects.get(pk=user_id, is_active=False)
+                attrs['user'] = user
+            except (ValueError, User.DoesNotExist, TypeError, OverflowError):
+                raise serializers.ValidationError("Invalid UID or user is already active.")
+        
+        # If email is provided, find user by email
+        elif email:
+            try:
+                user = User.objects.get(email=email, is_active=False)
+                attrs['user'] = user
+            except User.DoesNotExist:
+                raise serializers.ValidationError("No inactive user found with this email.")
+        
+        return attrs
+
+    def save(self):
+        user = self.validated_data['user']
+        
+        # Send activation email using Djoser's email system
+        context = {"user": user, "request": self.context.get('request')}
+        to = [user.email]
+        djoser_settings.EMAIL.activation(self.context.get('request'), context).send(to)
+        
+        return user

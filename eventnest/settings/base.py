@@ -27,6 +27,7 @@ THIRD_PARTY_APPS = [
     'phonenumber_field',
     'djoser',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     
     # Django-allauth for social authentication
@@ -34,7 +35,9 @@ THIRD_PARTY_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-    'allauth.socialaccount.providers.facebook',
+    # 'allauth.socialaccount.providers.facebook',
+    'djcelery_email',
+    'django_celery_beat',
 ]
 
 LOCAL_APPS = [
@@ -114,6 +117,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = 'authentication.User'
 
+ACCOUNT_ADAPTER = 'apps.authentication.adapters.CustomAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'apps.authentication.adapters.CustomSocialAccountAdapter'
+
 # Sites framework
 SITE_ID = 1
 
@@ -153,9 +159,9 @@ DJOSER = {
     'SEND_CONFIRMATION_EMAIL': True,
     'SEND_ACTIVATION_EMAIL': True,
     'SET_PASSWORD_RETYPE': True,
-    'PASSWORD_RESET_CONFIRM_URL': 'auth/password-reset/{uid}/{token}',
-    'USERNAME_RESET_CONFIRM_URL': 'auth/username-reset/{uid}/{token}',
-    'ACTIVATION_URL': 'auth/activate/{uid}/{token}',
+    'PASSWORD_RESET_CONFIRM_URL': 'password-reset?uid={uid}&token={token}',
+    'USERNAME_RESET_CONFIRM_URL': 'username-reset?uid={uid}&token={token}',
+    'ACTIVATION_URL': 'activate?uid={uid}&token={token}',
     'SERIALIZERS': {
         'user_create': 'apps.authentication.serializers.CustomUserCreateSerializer',
         'user': 'apps.authentication.serializers.CustomUserSerializer',
@@ -182,6 +188,7 @@ DJOSER = {
     },
 }
 
+
 # ============== DJANGO-ALLAUTH CONFIGURATION ==============
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -191,24 +198,23 @@ AUTHENTICATION_BACKENDS = [
 # Account settings (updated for newer versions)
 ACCOUNT_LOGIN_METHODS = {'email'}  # Replaces ACCOUNT_AUTHENTICATION_METHOD
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Replaces EMAIL_REQUIRED and USERNAME_REQUIRED
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
 ACCOUNT_LOGOUT_ON_GET = True
 
 # Tell Allauth to use email as the username field
 ACCOUNT_USER_MODEL_USERNAME_FIELD = 'email'
 ACCOUNT_USERNAME_MIN_LENGTH = 1
 
-# Custom adapter for user creation
-ACCOUNT_ADAPTER = 'apps.authentication.adapters.CustomAccountAdapter'
-SOCIALACCOUNT_ADAPTER = 'apps.authentication.adapters.CustomSocialAccountAdapter'
 
 # Social account settings
 SOCIALACCOUNT_AUTO_SIGNUP = True
-SOCIALACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Require email verification for social accounts
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # Require email verification for social accounts
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_STORE_TOKENS = True
+
+# ACCOUNT_SIGNUP_REDIRECT_URL = 'http://localhost:3000/login'
 
 # Provider configurations
 SOCIALACCOUNT_PROVIDERS = {
@@ -226,29 +232,29 @@ SOCIALACCOUNT_PROVIDERS = {
             'access_type': 'online',
         }
     },
-    'facebook': {
-        'APP': {
-            'client_id': config('FACEBOOK_APP_ID', default=''),
-            'secret': config('FACEBOOK_APP_SECRET', default=''),
-            'key': ''
-        },
-        'METHOD': 'oauth2',
-        'SDK_URL': '//connect.facebook.net/{locale}/sdk.js',
-        'SCOPE': ['email', 'public_profile'],
-        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
-        'INIT_PARAMS': {'cookie': True},
-        'FIELDS': [
-            'id',
-            'first_name',
-            'last_name',
-            'name',
-            'email',
-            'picture.type(large)',
-        ],
-        'EXCHANGE_TOKEN': True,
-        'VERIFIED_EMAIL': False,
-        'VERSION': 'v18.0',
-    }
+    # 'facebook': {
+    #     'APP': {
+    #         'client_id': config('FACEBOOK_APP_ID', default=''),
+    #         'secret': config('FACEBOOK_APP_SECRET', default=''),
+    #         'key': ''
+    #     },
+    #     'METHOD': 'oauth2',
+    #     'SDK_URL': '//connect.facebook.net/{locale}/sdk.js',
+    #     'SCOPE': ['email', 'public_profile'],
+    #     'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+    #     'INIT_PARAMS': {'cookie': True},
+    #     'FIELDS': [
+    #         'id',
+    #         'first_name',
+    #         'last_name',
+    #         'name',
+    #         'email',
+    #         'picture.type(large)',
+    #     ],
+    #     'EXCHANGE_TOKEN': True,
+    #     'VERIFIED_EMAIL': False,
+    #     'VERSION': 'v18.0',
+    # }
 }
 
 # Redirect URLs (for testing without frontend)
@@ -276,3 +282,22 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Frontend URL for email templates
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+
+CELERY_BROKER_URL = env('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')
+CELERY_TIMEZONE = "UTC"
+
+EMAIL_BACKEND = env('EMAIL_BACKEND')
+
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'JWT authorization header using the Bearer scheme. Example: "Bearer {token}"'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+}

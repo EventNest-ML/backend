@@ -1,111 +1,92 @@
-# apps/authentication/adapters.py
+# your_app/adapters.py
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
-
-User = get_user_model()
+from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class CustomAccountAdapter(DefaultAccountAdapter):
-    def save_user(self, request, user, form, commit=True):
+    def send_mail(self, template_prefix, email, context):
+        # Prevent allauth from sending password reset / confirmation emails automatically
+        return
+
+    def _build_token_redirect(self, user):
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+        return (
+            f"{settings.FRONTEND_URL}/auth/callback?"
+            f"access={access_token}&refresh={refresh_token}"
+        )
+
+    def get_login_redirect_url(self, request):
         """
-        Custom user creation logic for regular signup
+        After login is successful
         """
-        user = super().save_user(request, user, form, commit=False)
-        
-        # Add any custom logic here
-        if commit:
-            user.save()
-        return user
+        return self._build_token_redirect(request.user)
+
+    def get_signup_redirect_url(self, request):
+        """
+        After *signup* is successful
+        """
+        return self._build_token_redirect(request.user)
+
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def pre_social_login(self, request, sociallogin):
+
         """
-        Handle existing users with same email
+        Auto-link social accounts to existing users by email.
         """
-        user = sociallogin.user
-        if user.id:
+        if sociallogin.is_existing:
+            # Social account already linked → nothing to do
             return
-            
-        if not user.email:
+
+        email = sociallogin.account.extra_data.get("email")
+        print("SOCIALS: ", sociallogin, email)
+        if not email:
             return
-            
-        # Check if a user with this email already exists
+
+        User = get_user_model()
         try:
-            existing_user = User.objects.get(email=user.email)
-            # Connect the social account to existing user
-            sociallogin.connect(request, existing_user)
+            # If user already exists with this email → link account
+            user = User.objects.get(email=email)
+            sociallogin.connect(request, user)
+
         except User.DoesNotExist:
-            pass
+            # New user → let the normal signup flow continue
+            return
+        
+    def get_connect_redirect_url(self, request, socialaccount):
+        print("Connect redirect url")
+        """
+        Called after a *new social signup* succeeds.
+        Issue JWT tokens and redirect to frontend callback.
+        """
+        user = request.user
+        refresh = RefreshToken.for_user(user)
+
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+
+        return (
+            f"{settings.FRONTEND_URL}/auth/callback?"
+            f"access={access_token}&refresh={refresh_token}"
+        )
     
     def populate_user(self, request, sociallogin, data):
         """
-        Populate user instance with social account data
+        Populate user fields (first_name, last_name, email) from Google data.
         """
         user = super().populate_user(request, sociallogin, data)
-        print("Populate User: ", user)
-        # Extract additional data from social provider
-        if sociallogin.account.provider == 'google':
-            user.firstname = data.get('first_name', '')
-            user.lastname = data.get('last_name', '')
-            # Keep user inactive to trigger Djoser's activation flow
-            user.is_active = True
-            
-        elif sociallogin.account.provider == 'facebook':
-            user.first_name = data.get('first_name', '')
-            user.last_name = data.get('last_name', '')
-            user.is_active = True
-            
-        return user
-    
-    def save_user(self, request, sociallogin, form=None):
-        """
-        Save the social user and trigger Djoser's activation flow
-        """
-        user = super().save_user(request, sociallogin, form)
-        print("Saving user", user)
-        
-        # Check if this is a new user (first time social login)
-        if not user.is_active:
-            # Trigger Djoser's activation email
-            self.trigger_djoser_activation(user)
-        
-        return user
+        extra_data = sociallogin.account.extra_data
 
-    def trigger_djoser_activation(self, user):
-        """
-        Trigger Djoser's activation email for social users
-        """
-        try:
-            # Import Djoser's email class
-            from djoser.email import ActivationEmail
-            from djoser.conf import settings as djoser_settings
-            
-            # Create the activation email using your configured template
-            email = ActivationEmail(None, {})
-            
-            # Set up the context (same as Djoser does internally)
-            context = email.get_context_data()
-            context['user'] = user
-            
-            # Use Djoser's utils to generate uid and token
-            from djoser.utils import encode_uid
-            from django.contrib.auth.tokens import default_token_generator
-            
-            context['uid'] = encode_uid(user.pk)
-            context['token'] = default_token_generator.make_token(user)
-            context['url'] = f"{djoser_settings.ACTIVATION_URL.format(**context)}"
-            
-            # Send the email using Djoser's configured email class
-            email.context = context
-            email.send([user.email])
-            
-        except Exception as e:
-            # Log error but don't break the flow
-            print(f"Failed to send Djoser activation email: {e}")
-    
-    def is_auto_signup_allowed(self, request, sociallogin):
-        """
-        Control whether social signup is allowed
-        """
-        return True
+        user.firstname = extra_data.get("given_name", "")
+        user.lastname = extra_data.get("family_name", "")
+        if not user.firstname and "name" in extra_data:
+            parts = extra_data["name"].split(" ", 1)
+            user.firstname = parts[0]
+            if len(parts) > 1:
+                user.lastname = parts[1]
+
+        return user
