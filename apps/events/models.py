@@ -15,12 +15,61 @@ class TimeStampedUUIDModel(models.Model):
 
 
 class Event(TimeStampedUUIDModel):
+    """
+    Represents an event created by a user.
+    """
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='owned_events'
+    )
     name = models.CharField(max_length=255)
-    event_type = models.CharField(max_length=100, blank=True)
-    date = models.DateField()
+    date = models.DateTimeField()
     location = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_events')
+    collaborators = models.ManyToManyField(
+        User,
+        through='Collaborator',
+        related_name='events_collaborating'
+    )
 
     def __str__(self):
         return self.name
+
+class Collaborator(models.Model):
+    """
+    Acts as an intermediary model to manage collaborators for an event.
+    """
+    class Role(models.TextChoices):
+        ADMIN = 'ADMIN', 'Admin'
+        COLLABORATOR = 'COLLABORATOR', 'Collaborator'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.COLLABORATOR)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'event') # Ensures a user can only join an event once
+
+    def __str__(self):
+        return f"{self.user.username} - {self.event.name}"
+
+class Invitation(models.Model):
+    """
+    Stores invitation records sent by event owners.
+    """
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        ACCEPTED = 'ACCEPTED', 'Accepted'
+        DECLINED = 'DECLINED', 'Declined'
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='invitations')
+    email = models.EmailField()
+    sent_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Invitation for {self.email} to {self.event.name}"

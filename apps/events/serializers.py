@@ -1,8 +1,57 @@
 from rest_framework import serializers
-from .models import Event
+from django.contrib.auth import get_user_model
+from .models import Event, Invitation, Collaborator
 
-class EventSerializer(serializers.ModelSerializer):
+User = get_user_model()
+
+class CollaboratorSerializer(serializers.ModelSerializer):
+    """Serializer for displaying collaborator details."""
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = Collaborator
+        fields = ['username', 'role', 'joined_at']
+
+class EventListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for listing events (summary view).
+    """
+    owner = serializers.StringRelatedField()
+
     class Meta:
         model = Event
-        fields = ['id', 'name', 'event_type', 'date', 'location', 'notes', 'owner']
-        read_only_fields = ['owner']
+        fields = ['id', 'name', 'date', 'location', 'owner']
+
+class EventDetailSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating, retrieving, and updating a single event.
+    """
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    collaborators = CollaboratorSerializer(source='collaborator_set', many=True, read_only=True)
+
+    class Meta:
+        model = Event
+        fields = ['id', 'name', 'date', 'location', 'notes', 'owner', 'collaborators']
+        read_only_fields = ['id', 'owner', 'collaborators']
+
+class InvitationCreateSerializer(serializers.Serializer):
+    """
+    Serializer for creating and sending an invitation.
+    """
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        event = self.context['event']
+        # Check if user is already a collaborator
+        if event.collaborators.filter(email=value).exists():
+            raise serializers.ValidationError("This user is already a collaborator on this event.")
+        # Check for a pending invitation
+        if Invitation.objects.filter(event=event, email=value, status='PENDING').exists():
+            raise serializers.ValidationError("An invitation has already been sent to this email address.")
+        return value
+
+class InvitationAcceptSerializer(serializers.Serializer):
+    """
+    Serializer to validate an invitation token.
+    """
+    token = serializers.UUIDField()
