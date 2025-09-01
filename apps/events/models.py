@@ -1,4 +1,6 @@
 import uuid
+from datetime import timedelta
+from django.utils import timezone
 from django.db import models
 from django.contrib.auth import get_user_model
 
@@ -53,7 +55,7 @@ class Collaborator(models.Model):
         unique_together = ('user', 'event') # Ensures a user can only join an event once
 
     def __str__(self):
-        return f"{self.user.username} - {self.event.name}"
+        return f"{self.user} - {self.event.name}"
 
 class Invitation(models.Model):
     """
@@ -70,6 +72,16 @@ class Invitation(models.Model):
     token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(seconds=120)
+        super().save(*args, **kwargs)
+
+    def is_valid(self):
+        return self.expires_at > timezone.now() #shows if the invitation link has expired or not
+    
 
     def __str__(self):
         return f"Invitation for {self.email} to {self.event.name}"

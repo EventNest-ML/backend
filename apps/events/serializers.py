@@ -1,4 +1,5 @@
 from rest_framework import serializers
+import uuid
 from django.contrib.auth import get_user_model
 from .models import Event, Invitation, Collaborator
 
@@ -42,12 +43,20 @@ class InvitationCreateSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         event = self.context['event']
+       
         # Check if user is already a collaborator
         if event.collaborators.filter(email=value).exists():
             raise serializers.ValidationError("This user is already a collaborator on this event.")
         # Check for a pending invitation
         if Invitation.objects.filter(event=event, email=value, status='PENDING').exists():
-            raise serializers.ValidationError("An invitation has already been sent to this email address.")
+            invitation = Invitation.objects.get(event=event, email=value, status='PENDING')
+            
+            # if invitation is expired
+            if invitation.is_valid():
+                raise serializers.ValidationError("An invitation has already been sent to this email address and has not expired.")
+            else:
+                invitation.delete() # deletes invitation if it has expired so that another can be created!
+        print("value:  **********  ", value)
         return value
 
 class InvitationAcceptSerializer(serializers.Serializer):

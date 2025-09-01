@@ -138,7 +138,12 @@ class InvitationAcceptAPIView(APIView):
                 {"error": "This invitation is not for you."},
                 status=status.HTTP_403_FORBIDDEN
             )
-
+        # checks if activation is expired
+        if not invitation.is_valid():
+            return Response(
+                {"error": "invitation link has expired, kindly request another invitation from the event owner."},
+                status=status.HTTP_410_GONE
+            )
         # Add user as a collaborator
         Collaborator.objects.create(
             user=request.user,
