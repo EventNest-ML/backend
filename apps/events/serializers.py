@@ -56,7 +56,6 @@ class InvitationCreateSerializer(serializers.Serializer):
                 raise serializers.ValidationError("An invitation has already been sent to this email address and has not expired.")
             else:
                 invitation.delete() # deletes invitation if it has expired so that another can be created!
-        print("value:  **********  ", value)
         return value
 
 class InvitationAcceptSerializer(serializers.Serializer):
