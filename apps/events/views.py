@@ -12,7 +12,7 @@ from .serializers import (
     InvitationCreateSerializer,
     InvitationAcceptSerializer
 )
-from .permissions import IsEventOwner
+from .permissions import IsEventOwnerOrCollaboratorReadOnly
 from .utils.email import send_invite_mail
 
 
@@ -49,7 +49,7 @@ class EventDetailAPIView(APIView):
     API view to retrieve, update, or delete a specific event instance.
     Corresponds to User Story 2c.
     """
-    permission_classes = [permissions.IsAuthenticated, IsEventOwner]
+    permission_classes = [permissions.IsAuthenticated, IsEventOwnerOrCollaboratorReadOnly]
     
 
     def get_object(self, id):
@@ -94,7 +94,7 @@ class InvitationCreateAPIView(APIView):
     Creates and sends an invitation for an event.
     Corresponds to User Story 3a.
     """
-    permission_classes = [permissions.IsAuthenticated, IsEventOwner]
+    permission_classes = [permissions.IsAuthenticated, IsEventOwnerOrCollaboratorReadOnly]
 
     @swagger_auto_schema(request_body=InvitationCreateSerializer)
     def post(self, request, id, *args, **kwargs):
