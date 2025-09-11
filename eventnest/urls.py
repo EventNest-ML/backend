@@ -15,6 +15,8 @@ urlpatterns = [
     path('api/auth/users/', include('apps.authentication.urls'), name='users'),
     path('api/auth/', include('djoser.urls')),
     path('api/auth/', include('djoser.urls.jwt')),
+    
+    path("events/", include("apps.events.urls")), #urls for events
 ]
 
 

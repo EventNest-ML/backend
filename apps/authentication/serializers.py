@@ -43,7 +43,6 @@ class UserCreateSerializer(DjoserUserCreateSerializer):
         # First call the parent's validate_password method
         value = super().validate_password(value)
         
-        # Then add Cognito-specific validations
         if not re.search(r'[A-Z]', value):
             raise serializers.ValidationError("Password must contain at least one uppercase letter.")
         
@@ -53,19 +52,16 @@ class UserCreateSerializer(DjoserUserCreateSerializer):
         if not re.search(r'[0-9]', value):
             raise serializers.ValidationError("Password must contain at least one number.")
         
-        # Standard Cognito also requires special characters
         if not re.search(r'[^A-Za-z0-9]', value):
             raise serializers.ValidationError("Password must contain at least one special character.")
         
-        # Cognito typically requires at least 8 characters
         if len(value) < 8:
             raise serializers.ValidationError("Password must be at least 8 characters long.")
         
         return value
         
     def create(self, validated_data):
-        """Create user in both Django DB and Cognito"""
-        
+                
         # First, create user with Djoser's standard method
         user = super().create(validated_data)
         
