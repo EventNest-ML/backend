@@ -23,3 +23,13 @@ class IsEventOwnerOrCollaboratorReadOnly(permissions.BasePermission):
 
         # For write permissions, only the owner can edit
         return obj.owner == request.user
+
+
+class IsEventOwner(permissions.BasePermission):
+    """
+    Permission that allows only the owner of the event
+    to update or delete contributors.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        return obj.event.owner == request.user

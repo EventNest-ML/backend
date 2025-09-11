@@ -76,7 +76,7 @@ class Invitation(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.expires_at:
-            self.expires_at = timezone.now() + timedelta(seconds=120)
+            self.expires_at = timezone.now() + timedelta(hours=48)
         super().save(*args, **kwargs)
 
     def is_valid(self):

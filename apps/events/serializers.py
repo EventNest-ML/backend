@@ -58,8 +58,18 @@ class InvitationCreateSerializer(serializers.Serializer):
                 invitation.delete() # deletes invitation if it has expired so that another can be created!
         return value
 
+# class InvitationAcceptSerializer(serializers.Serializer):
+#     """
+#     Serializer to validate an invitation token.
+#     """
+#     token = serializers.UUIDField()
+
 class InvitationAcceptSerializer(serializers.Serializer):
-    """
-    Serializer to validate an invitation token.
-    """
     token = serializers.UUIDField()
+    action = serializers.ChoiceField(
+        choices=[("accept", "Accept"), ("decline", "Decline")],
+        default="accept"
+    )
+
+
+

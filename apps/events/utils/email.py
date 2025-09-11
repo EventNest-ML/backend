@@ -6,7 +6,7 @@ def send_invite_mail(invite_link, email_addr, event):
     message = f"""Hello, there.
     {event.owner.firstname} is inviting you to be a collaborator in their upcomming {event.name} event.
     you can reach out to the owner of this event via {event.owner.email}
-    please click the link below to join (Link expires the next 7 days):
+    please click the link below to join (Link expires the next 48 hours):
     {invite_link}
     best regards. enventnest
     """

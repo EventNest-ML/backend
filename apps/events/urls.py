@@ -3,7 +3,10 @@ from .views import (
     EventListCreateAPIView,
     EventDetailAPIView,
     InvitationCreateAPIView,
-    InvitationAcceptAPIView,
+    InvitationRespondAPIView,
+    InvitationRetrieveAPIView,
+    CollaboratorListAPIView, 
+    CollaboratorDetailAPIView
 )
 
 urlpatterns = [
@@ -13,5 +16,13 @@ urlpatterns = [
     
     # Invitation URLs
     path('<uuid:id>/invite/', InvitationCreateAPIView.as_view(), name='event-invite'),
-    path('invites/accept/', InvitationAcceptAPIView.as_view(), name='invitation-accept'),
+    path("invites/respond/", InvitationRespondAPIView.as_view(), name="invitation-respond"),  # accepts or declines
+    path("invites/accept/<str:token>/", InvitationRetrieveAPIView.as_view(), name="invitation-retrieve"),  # fetch info
+
+    #Collabotator urls
+    path("<uuid:event_id>/contributors/", CollaboratorListAPIView.as_view(), name="contributor-list"),
+    path("<uuid:event_id>/collabotator/<int:pk>/", CollaboratorDetailAPIView.as_view(), name="collabotator-detail"),
+    
+    
+
 ]

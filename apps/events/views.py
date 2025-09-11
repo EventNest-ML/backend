@@ -10,9 +10,10 @@ from .serializers import (
     EventListSerializer,
     EventDetailSerializer,
     InvitationCreateSerializer,
-    InvitationAcceptSerializer
+    InvitationAcceptSerializer,
+    CollaboratorSerializer
 )
-from .permissions import IsEventOwnerOrCollaboratorReadOnly
+from .permissions import IsEventOwnerOrCollaboratorReadOnly, IsEventOwner
 from .utils.email import send_invite_mail
 
 
@@ -122,10 +123,43 @@ class InvitationCreateAPIView(APIView):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class InvitationAcceptAPIView(APIView):
+
+class InvitationRetrieveAPIView(APIView):
     """
     Accepts an invitation using a token.
     Corresponds to User Story 3b.
+    Retrieves invitation details for display before user accepts/declines.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, token, *args, **kwargs):
+        invitation = get_object_or_404(Invitation, token=token)
+
+        if not invitation.is_valid():
+            return Response(
+                {"error": "This invitation link has expired."},
+                status=status.HTTP_410_GONE
+            )
+
+        return Response({
+            "event": {
+                "id": invitation.event.id,
+                "name": invitation.event.name,
+                "notes": invitation.event.notes,
+                "owner": invitation.event.owner.firstname,
+            },
+            "email": invitation.email,
+            "status": invitation.status,
+        }, status=status.HTTP_200_OK)
+
+
+
+    
+class InvitationRespondAPIView(APIView):
+    """
+    Accepts an invitation using a token.
+    Corresponds to User Story 3b.
+    Accepts or declines an invitation using a token.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -136,32 +170,89 @@ class InvitationAcceptAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         token = serializer.validated_data['token']
-        invitation = get_object_or_404(Invitation, token=token, status=Invitation.Status.PENDING)
-
-        # Ensure the logged-in user's email matches the invitation email
-        if request.user.email != invitation.email:
-            return Response(
-                {"error": "This invitation is not for you."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        # checks if activation is expired
-        if not invitation.is_valid():
-            return Response(
-                {"error": "invitation link has expired, kindly request another invitation from the event owner."},
-                status=status.HTTP_410_GONE
-            )
-        # Add user as a collaborator
-        Collaborator.objects.create(
-            user=request.user,
-            event=invitation.event,
-            role=Collaborator.Role.COLLABORATOR
+        action = serializer.validated_data['action']
+        invitation = get_object_or_404(
+            Invitation, token=token, status=Invitation.Status.PENDING
         )
 
-        # Update invitation status
-        invitation.status = Invitation.Status.ACCEPTED
-        invitation.save()
+        # Ensure the logged-in user's email matches
+        if request.user.email != invitation.email:
+            return Response(
+                {"error": "This invitation is linked to another email address."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
+        # Check expiration
+        if not invitation.is_valid():
+            return Response(
+                {"error": "This invitation link has expired."},
+                status=status.HTTP_410_GONE
+            )
+
+        if action == "accept":
+  
+            # Add user as collaborator (avoid duplicates)
+            Collaborator.objects.get_or_create(
+                user=request.user,
+                event=invitation.event,
+                defaults={"role": Collaborator.Role.COLLABORATOR}
+            )
+            invitation.status = Invitation.Status.ACCEPTED
+            invitation.save()
+            return Response(
+                {"message": f"Successfully joined {invitation.event.name}."},
+                status=status.HTTP_200_OK
+            )
+
+        elif action == "decline":
+            invitation.status = Invitation.Status.DECLINED
+            invitation.save()
+            return Response(
+                {"message": f"You declined the invitation to {invitation.event.name}."},
+                status=status.HTTP_200_OK
+            )
+
+#Views for Managing Contributors
+class CollaboratorListAPIView(generics.ListAPIView):
+    """
+    List all contributors for a given event.
+    """
+    serializer_class = CollaboratorSerializer
+    permission_classes = [permissions.IsAuthenticated,IsEventOwner]
+
+    def get_queryset(self):
+        event_id = self.kwargs["event_id"]
+        return Collaborator.objects.filter(event__id=event_id)
+    
+
+class CollaboratorDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update, or delete a contributor for a given event.
+    Only event owners can update or delete contributors.
+    """
+
+    serializer_class = CollaboratorSerializer
+    permission_classes = [permissions.IsAuthenticated, IsEventOwner]
+
+    def get_queryset(self):
+        """
+        Ensure we're only looking at collaborators for this event.
+        """
+        event_id = self.kwargs.get("event_id")
+        return Collaborator.objects.filter(event__id=event_id)
+
+    def delete(self, request, *args, **kwargs):
+        collaborator = self.get_object()
+
+        # Prevent owner from removing themselves
+        if collaborator.user == request.user:
+            return Response(
+                {"error": "You cannot remove yourself as a contributor."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        collaborator.delete()
         return Response(
-            {"message": f"Successfully joined the event: {invitation.event.name}"},
-            status=status.HTTP_200_OK
+            {"message": f"{collaborator.user.email} has been removed from the event."},
+            status=status.HTTP_204_NO_CONTENT,
         )
