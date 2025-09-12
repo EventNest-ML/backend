@@ -5,10 +5,6 @@ from django.urls import path, include
 from .swagger import schema_view
 
 
-
-
-
-
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
@@ -21,6 +17,7 @@ urlpatterns = [
     path("api/events/", include("apps.events.urls")), #urls for events
     path("api/contacts/", include("apps.contacts.urls")), #urls for Contacts
     path("api/events/", include("apps.tasks.urls")), #urls for Tasks
+    path('api/notifications/', include('apps.user_notifications.urls')),
 ]
 
 

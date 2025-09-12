@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ notification.title }}</title>
+  </head>
+  <body>
+    <div
+      style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto"
+    >
+      <h2>{{ notification.title }}</h2>
+      <p>{{ notification.message }}</p>
+
+      {% if related_object %}
+      <p><strong>Related to:</strong> {{ related_object }}</p>
+      {% endif %} {% if data.due_date %}
+      <p><strong>Due Date:</strong> {{ data.due_date|date:"M d, Y H:i" }}</p>
+      {% endif %}
+
+      <hr />
+      <p style="color: #666; font-size: 12px">
+        This notification was sent from your project management system. To
+        manage your notification preferences, log into your account.
+      </p>
+    </div>
+  </body>
+</html>

@@ -54,3 +54,15 @@ DATABASES = {
 CELERY_REDIS_BACKEND_USE_SSL = {
     'ssl_cert_reqs': 'optional',
 }
+
+REDIS_HOST = env('REDIS_HOST')
+REDIS_PORT = env('REDIS_PORT')
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+        },
+    },
+}

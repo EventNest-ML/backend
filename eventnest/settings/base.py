@@ -11,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Application definition
 DJANGO_APPS = [
+    'daphne',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -38,6 +39,8 @@ THIRD_PARTY_APPS = [
     # 'allauth.socialaccount.providers.facebook',
     'djcelery_email',
     'django_celery_beat',
+    'notifications',
+    'channels',
 ]
 
 LOCAL_APPS = [
@@ -45,9 +48,10 @@ LOCAL_APPS = [
     'apps.events',
     'apps.authentication',
     'apps.tasks',
-    'apps.notifications',
     'apps.contacts',
+    'apps.user_notifications',
 ]
+
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -81,7 +85,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "eventnest.wsgi.application"
+ASGI_APPLICATION = "eventnest.asgi.application"
 
 # Database
 DATABASES = {
@@ -303,4 +307,20 @@ SWAGGER_SETTINGS = {
         }
     },
     'USE_SESSION_AUTH': False,
+}
+
+
+CELERY_BEAT_SCHEDULE = {
+    'send_scheduled_notifications': {
+        'task': 'apps.user_notifications.tasks.send_scheduled_notifications',
+        'schedule': 3600.0,  # Run every minute
+    },
+    'check_due_events': {
+        'task': 'apps.user_notifications.tasks.check_due_events',
+        'schedule': 3600.0,  # Run every hour
+    },
+    'check_due_tasks': {
+        'task': 'apps.user_notifications.tasks.check_due_tasks',
+        'schedule': 3600.0,  # Run every hour
+    },
 }

@@ -36,3 +36,10 @@ DATABASES = {
         'PORT': env('POSTGRES_PORT'),
     }
 }
+
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
