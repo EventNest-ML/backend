@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# /start-celerybeat
+# Place this file in the same directory as your other start scripts
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+# Create celerybeat directory if it doesn't exist
+mkdir -p /app/celerybeat
+
+# Wait for services to be ready
+echo "Waiting for redis..."
+while ! nc -z redis 6379; do
+  sleep 0.1
+done
+echo "Redis started"
+
+echo "Waiting for postgres..."
+while ! nc -z postgresdb 5432; do
+  sleep 0.1
+done
+echo "PostgreSQL started"
+
+# Wait a bit more to ensure Django migrations are complete
+echo "Waiting for Django to be ready..."
+sleep 10
+
+# Start Celery Beat
+echo "Starting Celery Beat..."
+exec celery -A eventnest beat \
+    --scheduler ${CELERY_BEAT_SCHEDULER} \
+    --loglevel=info \
+    --pidfile=/tmp/celerybeat.pid \
+    --schedule=/app/celerybeat/beat-schedule
