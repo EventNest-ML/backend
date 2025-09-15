@@ -30,6 +30,15 @@ class Event(TimeStampedUUIDModel):
     date = models.DateTimeField()
     location = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
+
+    # audit fields
+    updated_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="updated_events"
+    )
     collaborators = models.ManyToManyField(
         User,
         through='Collaborator',
