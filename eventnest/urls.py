@@ -16,7 +16,7 @@ urlpatterns = [
     path('api/auth/', include('djoser.urls')),
     path('api/auth/', include('djoser.urls.jwt')),
     
-    path("events/", include("apps.events.urls")), #urls for events
+    path("api/events/", include("apps.events.urls")), #urls for events
 ]
 
 

@@ -26,6 +26,7 @@ class Event(TimeStampedUUIDModel):
         related_name='owned_events'
     )
     name = models.CharField(max_length=255)
+    type = models.CharField(max_length=200)
     date = models.DateTimeField()
     location = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
