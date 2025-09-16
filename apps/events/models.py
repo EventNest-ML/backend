@@ -20,6 +20,11 @@ class Event(TimeStampedUUIDModel):
     """
     Represents an event created by a user.
     """
+    STATUS_CHOICES = [
+        ("ongoing", "Ongoing"),
+        ("completed", "Completed"),
+        ("archived", "Archived"),
+    ]
     owner = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -30,6 +35,7 @@ class Event(TimeStampedUUIDModel):
     date = models.DateTimeField()
     location = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="ongoing")
 
     # audit fields
     updated_by = models.ForeignKey(

@@ -5,6 +5,7 @@ from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from .models import Event, Invitation, Collaborator
 from .serializers import (
     EventListSerializer,
@@ -31,7 +32,18 @@ class EventListCreateAPIView(APIView):
         # List events where the user is either the owner or a collaborator
         events = Event.objects.filter(owner=request.user) | Event.objects.filter(collaborators=request.user)
         serializer = EventListSerializer(events.distinct(), many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # dashboard counts
+        queryset = events.distinct()
+        counts = {
+            "total": queryset.count(),
+            "ongoing": queryset.filter(status="ongoing").count(),
+            "completed": queryset.filter(status="completed").count(),
+            "archived": queryset.filter(status="archived").count(),
+        }
+
+        return Response({'events':serializer.data, 'counts':counts},
+                         status=status.HTTP_200_OK)
     
     @swagger_auto_schema(request_body=EventDetailSerializer)
     def post(self, request, *args, **kwargs):
@@ -110,7 +122,7 @@ class InvitationCreateAPIView(APIView):
                 sent_by=request.user
             )
             # email would be sent with the invite link
-            invite_link = request.build_absolute_uri(f"/events/invites/accept/?token={invitation.token}")
+            invite_link = request.build_absolute_uri(f"/api/events/invites/validate/?token={invitation.token}")
             email = serializer.validated_data.get("email")
             event = invitation.event
             try:
@@ -118,7 +130,7 @@ class InvitationCreateAPIView(APIView):
             except Exception as err:
                 print(f"error: {err} occured!")
             return Response(
-                {"message": "Invitation sent successfully.", "invite_link": invite_link},
+                {"message": f"Invitation sent successfully to {email}."},
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -126,13 +138,26 @@ class InvitationCreateAPIView(APIView):
 
 class InvitationRetrieveAPIView(APIView):
     """
-    Accepts an invitation using a token.
+    Validates invitation token.
     Corresponds to User Story 3b.
     Retrieves invitation details for display before user accepts/declines.
     """
     permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, token, *args, **kwargs):
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'token',
+                openapi.IN_QUERY,
+                description="Invitation token (UUID)",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        token = request.query_params.get('token')
+        
+        print("*********************: ", token)
         invitation = get_object_or_404(Invitation, token=token)
 
         if not invitation.is_valid():
@@ -157,9 +182,8 @@ class InvitationRetrieveAPIView(APIView):
     
 class InvitationRespondAPIView(APIView):
     """
-    Accepts an invitation using a token.
+    Allows collaborators to Accept/Decline the invitation using a token.
     Corresponds to User Story 3b.
-    Accepts or declines an invitation using a token.
     """
     permission_classes = [permissions.IsAuthenticated]
 
