@@ -15,8 +15,6 @@ from .serializers import (
     CollaboratorSerializer
 )
 from .permissions import IsEventOwnerOrCollaboratorReadOnly, IsEventOwner
-from .utils.email import send_invite_mail
-
 
 # --- Event Management Views ---
 
@@ -121,14 +119,8 @@ class InvitationCreateAPIView(APIView):
                 email=serializer.validated_data['email'],
                 sent_by=request.user
             )
-            # email would be sent with the invite link
-            invite_link = request.build_absolute_uri(f"/api/events/invites/validate/?token={invitation.token}")
             email = serializer.validated_data.get("email")
             event = invitation.event
-            try:
-                send_invite_mail(invite_link=invite_link, email_addr=email, event=event)
-            except Exception as err:
-                print(f"error: {err} occured!")
             return Response(
                 {"message": f"Invitation sent successfully to {email}."},
                 status=status.HTTP_201_CREATED

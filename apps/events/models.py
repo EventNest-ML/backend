@@ -3,6 +3,9 @@ from datetime import timedelta
 from django.utils import timezone
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.urls import reverse
+from urllib.parse import urlencode
 
 User = get_user_model()
 
@@ -96,7 +99,21 @@ class Invitation(models.Model):
         super().save(*args, **kwargs)
 
     def is_valid(self):
-        return self.expires_at > timezone.now() #shows if the invitation link has expired or not
+        return self.expires_at > timezone.now()  # shows if the invitation link has expired or not
+
+    def get_absolute_url(self):
+        base_url = reverse('invitation-retrieve')
+        query_string = urlencode({'token': str(self.token)})
+        return f"{base_url}?{query_string}"
+    
+    def get_full_invitation_url(self):
+        
+        domain = getattr(settings, 'DOMAIN', 'localhost:8000')
+        
+        protocol = 'https' if getattr(settings, 'USE_HTTPS', False) else 'http'
+        relative_url = self.get_absolute_url()
+        
+        return f"{protocol}://{domain}{relative_url}"
     
 
     def __str__(self):
