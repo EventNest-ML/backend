@@ -112,7 +112,7 @@ class InvitationCreateAPIView(APIView):
         event = get_object_or_404(Event, id=id)
         self.check_object_permissions(request, event) # Ensure only the owner can invite
         
-        serializer = InvitationCreateSerializer(data=request.data, context={'event': event})
+        serializer = InvitationCreateSerializer(data=request.data, context={'event': event, "request":request})
         if serializer.is_valid():
             invitation = Invitation.objects.create(
                 event=event,
