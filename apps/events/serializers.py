@@ -9,11 +9,12 @@ User = get_user_model()
 
 class CollaboratorSerializer(serializers.ModelSerializer):
     """Serializer for displaying collaborator details."""
-    username = serializers.CharField(source='user.username', read_only=True)
+    fullname = serializers.CharField(source='user.get_full_name', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
 
     class Meta:
         model = Collaborator
-        fields = ['username', 'role', 'joined_at']
+        fields = ['fullname','email','role', 'joined_at']
 
 class EventListSerializer(serializers.ModelSerializer):
     """
