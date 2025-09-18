@@ -17,7 +17,7 @@ class EventListSerializer(serializers.ModelSerializer):
     """
     Serializer for listing events (summary view).
     """
-    owner = serializers.StringRelatedField()
+    owner = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Event
@@ -28,12 +28,13 @@ class EventDetailSerializer(serializers.ModelSerializer):
     Serializer for creating, retrieving, and updating a single event.
     """
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
     collaborators = CollaboratorSerializer(source='collaborator_set', many=True, read_only=True)
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'date', 'location', 'notes', 'owner', 'collaborators']
-        read_only_fields = ['id', 'owner', 'collaborators']
+        fields = ['id', 'name', 'date', 'location', 'notes', 'owner', 'updated_by', 'collaborators']
+        read_only_fields = ['id', 'owner', 'updated_by', 'collaborators']
 
 class InvitationCreateSerializer(serializers.Serializer):
     """

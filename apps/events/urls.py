@@ -11,13 +11,14 @@ from .views import (
 
 urlpatterns = [
     # Event URLs
+    
     path('', EventListCreateAPIView.as_view(), name='event-list-create'),
     path('<uuid:id>/', EventDetailAPIView.as_view(), name='event-detail'),
     
     # Invitation URLs
     path('<uuid:id>/invite/', InvitationCreateAPIView.as_view(), name='event-invite'),
     path("invites/respond/", InvitationRespondAPIView.as_view(), name="invitation-respond"),  # accepts or declines
-    path("invites/accept/<str:token>/", InvitationRetrieveAPIView.as_view(), name="invitation-retrieve"),  # fetch info
+    path("invites/validate/", InvitationRetrieveAPIView.as_view(), name="invitation-retrieve"),  # fetch info
 
     #Collabotator urls
     path("<uuid:event_id>/contributors/", CollaboratorListAPIView.as_view(), name="contributor-list"),
