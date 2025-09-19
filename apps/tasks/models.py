@@ -1,11 +1,11 @@
 from django.db import models
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+from ..events.models import  Event
 
 # Create your models here.
-# apps/events/models.py
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
-import uuid
+
+User = get_user_model()
   
 
 
@@ -14,22 +14,22 @@ class Task(models.Model):
     STATUS_CHOICES = [
         ("TODO", "To Do"),
         ("IN_PROGRESS", "In Progress"),
-        ("STATUS_DONE", "Done"),
+        ("DONE", "Done"),
     ]
 
    
-    event = models.ForeignKey("Event", on_delete=models.CASCADE, related_name="tasks")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="tasks")
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="assigned_tasks")
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_tasks")
+    assignee = models.ForeignKey(User, on_delete=models.CASCADE, related_name="assigned_tasks")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="created_tasks")
     due_date = models.DateField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_TODO)
-    created_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="TODO")
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ['due_date',"-created_at"]
         indexes = [
             models.Index(fields=["event", "assignee", "status"]),
         ]
@@ -39,11 +39,11 @@ class Task(models.Model):
 
 
 class TaskComment(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="comments")
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="task_comments")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="task_comments")
     content = models.TextField()
-    created_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["created_at"]
