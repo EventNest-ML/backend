@@ -1,17 +1,20 @@
 from rest_framework import serializers
 import uuid
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from .models import Event, Invitation, Collaborator
+from ..contacts.models import Contact
 
 User = get_user_model()
 
 class CollaboratorSerializer(serializers.ModelSerializer):
     """Serializer for displaying collaborator details."""
-    username = serializers.CharField(source='user.username', read_only=True)
+    fullname = serializers.CharField(source='user.get_full_name', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
 
     class Meta:
         model = Collaborator
-        fields = ['username', 'role', 'joined_at']
+        fields = ['fullname','email','role', 'joined_at']
 
 class EventListSerializer(serializers.ModelSerializer):
     """
@@ -40,24 +43,47 @@ class InvitationCreateSerializer(serializers.Serializer):
     """
     Serializer for creating and sending an invitation.
     """
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=False)
+    contact_id = serializers.IntegerField(required=False)
 
-    def validate_email(self, value):
+    def validate(self, attrs):
         event = self.context['event']
+        email = attrs.get("email")
+        contact_id = attrs.get("contact_id")
+        request = self.context.get("request")
+
+        if not email and not contact_id:
+            raise serializers.ValidationError("Either email or contact_id is required.")
+        
+
+        # Resolve email if contact_id is provided
+        if contact_id:
+            try:
+                contact = Contact.objects.get(id=contact_id, owner=request.user)
+                attrs["email"] = contact.email
+            except Contact.DoesNotExist:
+                raise serializers.ValidationError({"contact_id": "Invalid contact_id."})
+            
+
+        # Use resolved email for further checks
+        email = attrs["email"]
+            
        
         # Check if user is already a collaborator
-        if event.collaborators.filter(email=value).exists():
+        if event.collaborators.filter(email=email).exists() or event.invitations.filter(email=email, status="ACCEPTED").exists():
             raise serializers.ValidationError("This user is already a collaborator on this event.")
-        # Check for a pending invitation
-        if Invitation.objects.filter(event=event, email=value, status='PENDING').exists():
-            invitation = Invitation.objects.get(event=event, email=value, status='PENDING')
-            
-            # if invitation is expired
-            if invitation.is_valid():
+        
+        # Check for existing pending invitation
+        pending_invite = Invitation.objects.filter(event=event, email=email, status="PENDING").first()
+        if pending_invite:
+            if pending_invite.is_valid():
                 raise serializers.ValidationError("An invitation has already been sent to this email address and has not expired.")
             else:
-                invitation.delete() # deletes invitation if it has expired so that another can be created!
-        return value
+                pending_invite.delete()  # remove expired invite
+
+        print("***********attrs: ", attrs)
+
+        return attrs
 
 # class InvitationAcceptSerializer(serializers.Serializer):
 #     """
