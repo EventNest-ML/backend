@@ -10,7 +10,9 @@ User = get_user_model()
 
 
 class Task(models.Model):
-
+    STATUS_TODO = "TODO"
+    STATUS_IN_PROGRESS = "IN_PROGRESS"
+    STATUS_DONE = "DONE"
     STATUS_CHOICES = [
         ("TODO", "To Do"),
         ("IN_PROGRESS", "In Progress"),

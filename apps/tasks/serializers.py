@@ -1,56 +1,44 @@
-# apps/events/serializers.py
 from rest_framework import serializers
-from django.utils import timezone
 from django.db import transaction
-from django.conf import settings
+from django.contrib.auth import get_user_model
 
 from .models import Task, TaskComment
-from ..events.models import Event
+from ..events.models import Event   
+
+User = get_user_model()
 
 
 class TaskSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(read_only=True)
+    """
+    Full serializer for creating and updating tasks.
+    - Event owner: can create, edit, reassign, delete tasks.
+    - Assignee: can update status (handled separately).
+    """
     created_by = serializers.PrimaryKeyRelatedField(read_only=True)
-    assignee = serializers.PrimaryKeyRelatedField(queryset=settings.AUTH_USER_MODEL.objects.all())
-    status = serializers.ChoiceField(choices=Task.STATUS_CHOICES, read_only=False, default=Task.STATUS_TODO)
+    assignee = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all()
+    )
+    status = serializers.ChoiceField(
+        choices=Task.STATUS_CHOICES,
+        read_only=False,
+        default=Task.STATUS_TODO,
+    )
+    event_name = serializers.CharField(source="event.name", read_only=True)
 
     class Meta:
         model = Task
-        fields = [
-            "id",
-            "event",
-            "title",
-            "description",
-            "assignee",
-            "created_by",
-            "due_date",
-            "status",
-            "created_at",
-            "updated_at",
-        ]
+        fields = ["id","event_name","title","description", "assignee",  "created_by", "due_date", "status", "created_at", "updated_at" ]
         read_only_fields = ("created_at", "updated_at", "created_by")
-        extra_kwargs = {"event": {"write_only": True}}
+    
 
-    def validate_event(self, value):
-        # ensure event exists and user has permission to add tasks (owner)
-        request = self.context.get("request")
-        if not request:
-            return value
-        user = request.user
-        # Only owners allowed to create tasks (enforced at view/permission level too)
-        if hasattr(value, "owner"):
-            if value.owner != user:
-                raise serializers.ValidationError("Only the event owner can create tasks for this event.")
-        return value
 
     def validate_assignee(self, value):
         """
-        Ensure assignee is a collaborator on the event.
-        We expect `event` to be in initial_data (write_only). If not present, we cannot validate here.
+        Ensure the assignee is a collaborator (or the owner).
         """
-        event_id = self.initial_data.get("event")
+        event_id =  self.context["view"].kwargs.get("event_id")
+
         if not event_id:
-            # If updating and event isn't changing, skip here.
             return value
 
         try:
@@ -58,34 +46,44 @@ class TaskSerializer(serializers.ModelSerializer):
         except Event.DoesNotExist:
             raise serializers.ValidationError("Event does not exist.")
 
-        # --- ADAPT THIS BLOCK to your project's collaborator relation ---
-        # Option A: Event has a ManyToManyField to user named 'collaborators'
         if hasattr(event, "collaborators"):
-            if not event.collaborators.filter(pk=value.pk).exists() and event.owner != value:
-                raise serializers.ValidationError("Assignee must be a collaborator of the event.")
-
+            if (
+                not event.collaborators.filter(pk=value.pk).exists()
+                and event.owner != value
+            ):
+                raise serializers.ValidationError(
+                    "Assignee must be a collaborator of the event."
+                )
         return value
 
     def create(self, validated_data):
+        """
+        Set created_by automatically.
+        """
         request = self.context.get("request")
         user = getattr(request, "user", None)
         validated_data["created_by"] = user
-        # event is expected to be present
+
         with transaction.atomic():
             task = super().create(validated_data)
-            # TODO: trigger notification to assignee (task assigned)
-            # notify_task_assigned(task)
+            # 🔔 TODO: plug notification (assignee)
             return task
 
     def update(self, instance, validated_data):
-        # Allow owner to update fields (including reassign)
+        """
+        Allow owner to update fields (including reassign).
+        """
         with transaction.atomic():
             task = super().update(instance, validated_data)
-            # TODO: if assignee changed -> notify new assignee and previous assignee
+            # 🔔 TODO: plug notification (if reassigned)
             return task
 
 
 class TaskStatusUpdateSerializer(serializers.ModelSerializer):
+    """
+    Lightweight serializer for updating only the status field.
+    Used by assignees or owners.
+    """
     status = serializers.ChoiceField(choices=Task.STATUS_CHOICES)
 
     class Meta:
@@ -93,19 +91,24 @@ class TaskStatusUpdateSerializer(serializers.ModelSerializer):
         fields = ["status"]
 
     def validate_status(self, value):
-        # TODO: Optionally enforce status transitions (e.g., cannot go from DONE back to TODO) — omitted for simplicity
+        """
+        Optional: enforce transition rules (e.g., prevent DONE → TODO).
+        Currently accepts all transitions.
+        """
         return value
 
     def update(self, instance, validated_data):
         previous_status = instance.status
         instance.status = validated_data["status"]
         instance.save(update_fields=["status", "updated_at"])
-        # TODO: notify owner that assignee updated status
+        # 🔔 TODO: plug notification (status change)
         return instance
 
 
 class TaskCommentSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(read_only=True)
+    """
+    Serializer for task comments.
+    """
     author = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
@@ -117,5 +120,5 @@ class TaskCommentSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         validated_data["author"] = request.user
         comment = super().create(validated_data)
-        # TODO: notify interested parties about the new comment (e.g., task assignee & event owner)
+        # 🔔 TODO: plug notification (new comment)
         return comment
