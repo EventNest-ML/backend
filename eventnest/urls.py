@@ -18,6 +18,7 @@ urlpatterns = [
     
     path("api/events/", include("apps.events.urls")), #urls for events
     path("api/contacts/", include("apps.contacts.urls")), #urls for Contacts
+    path("api/budgets/", include("apps.budgets.urls"), name="budgets"),
 ]
 
 
