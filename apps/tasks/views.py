@@ -45,7 +45,7 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         event_id = self.kwargs.get("event_id")
-        print("******", event_id)
+     
         event = get_object_or_404(Event, id=event_id)
         if not (event.owner == self.request.user or event.collaborators.filter(pk=self.request.user.pk).exists()):
             raise PermissionDenied("You are not a collaborator on this event.")
