@@ -42,7 +42,7 @@ class TaskSerializer(serializers.ModelSerializer):
             return value
 
         try:
-            event = Event.objects.get(pk=event_id)
+            event = Event.objects.get(id=event_id)
         except Event.DoesNotExist:
             raise serializers.ValidationError("Event does not exist.")
 
