@@ -34,10 +34,11 @@ class EventDetailSerializer(serializers.ModelSerializer):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
     collaborators = CollaboratorSerializer(source='collaborator_set', many=True, read_only=True)
+    budget_id = serializers.CharField(source='budget.id', read_only=True)
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'location', 'type', 'notes', 'owner', 'start_date', 'end_date', 'updated_by', 'collaborators']
+        fields = ['id', 'name', 'location', 'type', 'notes', 'owner', 'start_date', 'end_date', 'updated_by', 'collaborators', 'budget_id']
         read_only_fields = ['id', 'owner', 'updated_by', 'collaborators']
 
     def validate(self, data):

@@ -41,7 +41,9 @@ THIRD_PARTY_APPS = [
     'django_celery_beat',
     'notifications',
     'channels',
+    'djmoney',
 ]
+
 
 LOCAL_APPS = [
     'apps.budgets',
@@ -265,8 +267,8 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # Redirect URLs (for testing without frontend)
-LOGIN_REDIRECT_URL = '/accounts/profile/'  # Django admin or custom success page
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+# LOGIN_REDIRECT_URL = '/accounts/profile/'  # Django admin or custom success page
+# LOGOUT_REDIRECT_URL = '/accounts/login/'
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # Alternative: redirect to admin for testing
@@ -286,6 +288,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5500",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
 
 # Frontend URL for email templates
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')

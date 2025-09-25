@@ -4,6 +4,8 @@ from django.dispatch import receiver
 from .models import Invitation, Event
 from .utils.email import send_invite_mail
 from notifications.signals import notify
+from apps.budgets.models import Budget
+from djmoney.money import Money
 
 
 @receiver(post_save, sender=Invitation)
@@ -29,7 +31,7 @@ def invitation_created_handler(sender, instance: Invitation, created, **kwargs):
 
 # Example of connecting to other model signals
 @receiver(post_save, sender=Event)
-def handle_event_created(sender, instance: Event, created, **kwargs):
+def handle_event_updated(sender, instance: Event, created, **kwargs):
     """
     Handle event creation - this creates notifications which then trigger WebSocket broadcast
     """
@@ -56,3 +58,12 @@ def handle_event_created(sender, instance: Event, created, **kwargs):
                 )
 
 
+@receiver(post_save, sender=Event)
+def create_event_budget(sender, instance, created, **kwargs):
+    """Automatically create a disabled budget when an event is created"""
+    if created:
+        Budget.objects.create(
+            event=instance,
+            estimated_amount=Money(0, 'NGN'),
+            is_enabled=False
+        )

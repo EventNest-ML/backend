@@ -18,6 +18,7 @@ urlpatterns = [
     path("api/contacts/", include("apps.contacts.urls")), #urls for Contacts
     path("api/events/", include("apps.tasks.urls")), #urls for Tasks
     path('api/notifications/', include('apps.user_notifications.urls')),
+    path("api/budgets/", include("apps.budgets.urls"), name="budgets"),
 ]
 
 
