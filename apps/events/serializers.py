@@ -14,7 +14,7 @@ class CollaboratorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collaborator
-        fields = ['fullname','email','role', 'joined_at']
+        fields = ['id','fullname','email','role', 'joined_at']
 
 class EventListSerializer(serializers.ModelSerializer):
     """
