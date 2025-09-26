@@ -128,7 +128,7 @@ class AssignedTasksListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         event_id = self.kwargs.get("event_id")
-        event = get_object_or_404(Event, pk=event_id)
+        event = get_object_or_404(Event, id=event_id)
         if not (event.owner == self.request.user or event.collaborators.filter(pk=self.request.user.pk).exists()):
             raise PermissionDenied("You are not a collaborator on this event.")
         return Task.objects.filter(event=event, assignee=self.request.user)
@@ -154,7 +154,7 @@ class TaskStatusUpdateAPIView(generics.UpdateAPIView):
 
     def get_queryset(self):
         event_id = self.kwargs.get("event_id")
-        event = get_object_or_404(Event, pk=event_id)
+        event = get_object_or_404(Event, id=event_id)
         if not (event.owner == self.request.user or event.collaborators.filter(pk=self.request.user.pk).exists()):
             raise PermissionDenied("You are not a collaborator on this event.")
         return Task.objects.filter(event=event)
@@ -190,7 +190,7 @@ class TaskCommentListCreateAPIView(generics.ListCreateAPIView):
         task_id = self.kwargs.get("task_id")
 
         event = get_object_or_404(Event, id=event_id)
-        task = get_object_or_404(Task, pk=task_id, event=event)
+        task = get_object_or_404(Task, id=task_id, event=event)
 
         if not (event.owner == self.request.user or event.collaborators.filter(pk=self.request.user.pk).exists()):
             raise PermissionDenied("You are not a collaborator on this event.")
@@ -201,7 +201,7 @@ class TaskCommentListCreateAPIView(generics.ListCreateAPIView):
         task_id = self.kwargs.get("task_id")
 
         event = get_object_or_404(Event, id=event_id)
-        task = get_object_or_404(Task, pk=task_id, event=event)
+        task = get_object_or_404(Task, id=task_id, event=event)
 
         if not (event.owner == self.request.user or event.collaborators.filter(pk=self.request.user.pk).exists()):
             raise PermissionDenied("You are not a collaborator on this event.")
