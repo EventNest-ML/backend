@@ -240,6 +240,21 @@ class CollaboratorListAPIView(generics.ListAPIView):
         event_id = self.kwargs["event_id"]
         return Collaborator.objects.filter(event__id=event_id)
     
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        event_id = self.kwargs["event_id"]
+        invitations = Invitation.objects.filter(event__id = event_id).distinct()
+      
+        counts = {"total_members": queryset.count(),
+                  "active_members": queryset.count(),
+                  "pending_members": invitations.filter(status="PENDING").count(),
+                  }
+        return Response({
+            "collaborators": serializer.data,
+            "counts": counts
+        })
+    
 
 class CollaboratorDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
