@@ -107,7 +107,9 @@ class InvitationCreateAPIView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated, IsEventOwnerOrCollaboratorReadOnly]
 
-    @swagger_auto_schema(request_body=InvitationCreateSerializer)
+    @swagger_auto_schema(
+            operation_summary="Creates and sends an invitation for an event",
+            request_body=InvitationCreateSerializer)
     def post(self, request, id, *args, **kwargs):
         event = get_object_or_404(Event, id=id)
         self.check_object_permissions(request, event) # Ensure only the owner can invite
@@ -134,8 +136,9 @@ class InvitationRetrieveAPIView(APIView):
     Corresponds to User Story 3b.
     Retrieves invitation details for display before user accepts/declines.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly] #I removed the authentication so that the invitee can the details without any authorization
     @swagger_auto_schema(
+        operation_summary="Displays event's details before  accepting/declining an Invitation",
         manual_parameters=[
             openapi.Parameter(
                 'token',
@@ -179,7 +182,9 @@ class InvitationRespondAPIView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]
 
-    @swagger_auto_schema(request_body=InvitationAcceptSerializer)
+    @swagger_auto_schema(
+            operation_summary="Accept/Decline the invitation",
+            request_body=InvitationAcceptSerializer)
     def post(self, request, *args, **kwargs):
         serializer = InvitationAcceptSerializer(data=request.data)
         if not serializer.is_valid():
@@ -239,6 +244,21 @@ class CollaboratorListAPIView(generics.ListAPIView):
     def get_queryset(self):
         event_id = self.kwargs["event_id"]
         return Collaborator.objects.filter(event__id=event_id)
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        event_id = self.kwargs["event_id"]
+        invitations = Invitation.objects.filter(event__id = event_id).distinct()
+      
+        counts = {"total_members": queryset.count(),
+                  "active_members": queryset.count(),
+                  "pending_members": invitations.filter(status="PENDING").count(),
+                  }
+        return Response({
+            "collaborators": serializer.data,
+            "counts": counts
+        })
     
 
 class CollaboratorDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
