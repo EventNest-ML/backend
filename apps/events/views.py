@@ -107,7 +107,9 @@ class InvitationCreateAPIView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated, IsEventOwnerOrCollaboratorReadOnly]
 
-    @swagger_auto_schema(request_body=InvitationCreateSerializer)
+    @swagger_auto_schema(
+            operation_summary="Creates and sends an invitation for an event",
+            request_body=InvitationCreateSerializer)
     def post(self, request, id, *args, **kwargs):
         event = get_object_or_404(Event, id=id)
         self.check_object_permissions(request, event) # Ensure only the owner can invite
