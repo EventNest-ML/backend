@@ -134,8 +134,9 @@ class InvitationRetrieveAPIView(APIView):
     Corresponds to User Story 3b.
     Retrieves invitation details for display before user accepts/declines.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly] #I removed the authentication so that the invitee can the details without any authorization
     @swagger_auto_schema(
+        operation_summary="Displays event's details before  accepting/declining an Invitation",
         manual_parameters=[
             openapi.Parameter(
                 'token',
@@ -179,7 +180,9 @@ class InvitationRespondAPIView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]
 
-    @swagger_auto_schema(request_body=InvitationAcceptSerializer)
+    @swagger_auto_schema(
+            operation_summary="Accept/Decline the invitation",
+            request_body=InvitationAcceptSerializer)
     def post(self, request, *args, **kwargs):
         serializer = InvitationAcceptSerializer(data=request.data)
         if not serializer.is_valid():

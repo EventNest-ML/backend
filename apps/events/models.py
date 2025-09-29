@@ -102,9 +102,9 @@ class Invitation(models.Model):
         return self.expires_at > timezone.now()  # shows if the invitation link has expired or not
 
     def get_absolute_url(self):
-        base_url = reverse('invitation-retrieve')
+        # base_url = reverse('invitation-retrieve')
         query_string = urlencode({'token': str(self.token)})
-        return f"{base_url}?{query_string}"
+        return f"/invites?{query_string}" #So that it matches with the frontend endpoint
     
     def get_full_invitation_url(self):
         
@@ -112,6 +112,7 @@ class Invitation(models.Model):
         
         protocol = 'https' if getattr(settings, 'USE_HTTPS', False) else 'http'
         relative_url = self.get_absolute_url()
+        # print(f"Relative url {relative_url}")
         
         return f"{protocol}://{domain}{relative_url}"
     
