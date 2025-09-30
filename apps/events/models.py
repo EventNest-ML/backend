@@ -56,28 +56,7 @@ class Event(TimeStampedUUIDModel):
         related_name='events_collaborating'
     )
 
-    def clean(self):
-        """
-        Validate logical consistency of dates and status.
-        Runs on both create and update.
-        """
-        now = timezone.now()
-
-        # Ensure start_date is before end_date
-        if self.start_date and self.end_date and self.start_date > self.end_date:
-            raise ValidationError("Start date cannot be later than end date.")
-
-        # Ensure status reflects reality
-        if self.status == "ongoing" and self.end_date and self.end_date < now:
-            raise ValidationError("An event with an end date in the past cannot be marked as ongoing.")
-
-        if self.status == "completed" and self.end_date and self.end_date >= now:
-            raise ValidationError("An event that has not ended cannot be marked as completed.")
-
-    def save(self, *args, **kwargs):
-        # Run model validations before saving
-        self.full_clean()
-        return super().save(*args, **kwargs)
+    
     
     def __str__(self):
         return self.name
