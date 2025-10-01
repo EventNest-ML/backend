@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.urls import reverse
 from urllib.parse import urlencode
+from imagekit.models import ImageSpecField
+from imagekit.processors import ResizeToFill
 
 User = get_user_model()
 
@@ -54,6 +56,17 @@ class Event(TimeStampedUUIDModel):
         User,
         through='Collaborator',
         related_name='events_collaborating'
+    )
+    banner_image = models.ImageField(upload_to='events', blank=True, null=True)
+    banner_image_mobile = ImageSpecField(
+        source='banner_image',
+        processors=[ResizeToFill(800, 400)],
+        options={'quality': 90}
+    )
+    banner_image_thumbnail = ImageSpecField(
+        source='banner_image',
+        processors=[ResizeToFill(300, 200)],
+        options={'quality': 90}
     )
 
     

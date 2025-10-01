@@ -6,24 +6,13 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from .serializers import NotificationSerializer
 from .pagination import NotificationPagination
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 
 class NotificationAPIView(APIView):
-    """
-    Single endpoint for most notification operations
     
-    GET /api/notifications/
-    - List notifications with filtering
-    - Query params: unread_only, level, search, page, page_size
-    
-    POST /api/notifications/
-    - Bulk operations based on 'action' field
-    - Actions: mark_read, mark_unread, delete, mark_all_read, delete_all, delete_read
-    
-    DELETE /api/notifications/
-    - Delete all notifications (shortcut for POST with action=delete_all)
-    """
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
@@ -44,6 +33,24 @@ class NotificationAPIView(APIView):
         serializer = NotificationSerializer(queryset, many=True)
         return Response(serializer.data)
     
+    @swagger_auto_schema(
+        operation_description="Perform bulk operations on notifications based on the 'action' parameter",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['action'],
+            properties={
+                'action': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    enum=['mark_read', 'mark_unread', 'delete', 'mark_all_read', 'mark_all_unread', 'delete_all', 'delete_read'],
+                    description="The action to perform on notifications"
+                ),
+            },
+        ),
+        responses={
+            200: openapi.Response('Success'),
+            400: openapi.Response('Invalid action or missing parameter'),
+        }
+    )
     def post(self, request):
         """Handle bulk operations based on action parameter"""
         action = request.data.get('action')
@@ -235,13 +242,7 @@ class NotificationAPIView(APIView):
         })
 
 class NotificationDetailAPIView(APIView):
-    """
-    Handle individual notification operations
     
-    GET /api/notifications/{id}/ - Get single notification
-    POST /api/notifications/{id}/ - Mark as read/unread (action param)
-    DELETE /api/notifications/{id}/ - Delete single notification
-    """
     permission_classes = [IsAuthenticated]
     
     def get_object(self, request, pk):
@@ -253,6 +254,24 @@ class NotificationDetailAPIView(APIView):
         serializer = NotificationSerializer(notification)
         return Response(serializer.data)
     
+    @swagger_auto_schema(
+        operation_description="Perform an operation on a single notification based on the 'action' parameter",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['action'],
+            properties={
+                'action': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    enum=['mark_read', 'mark_unread'],
+                    description="The action to perform on a single notification"
+                ),
+            },
+        ),
+        responses={
+            200: openapi.Response('Success'),
+            400: openapi.Response('Invalid action or missing parameter'),
+        }
+    )
     def post(self, request, pk):
         """Mark individual notification as read/unread based on action"""
         notification = self.get_object(request, pk)

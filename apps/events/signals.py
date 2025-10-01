@@ -62,8 +62,17 @@ def handle_event_updated(sender, instance: Event, created, **kwargs):
 def create_event_budget(sender, instance, created, **kwargs):
     """Automatically create a disabled budget when an event is created"""
     if created:
-        Budget.objects.create(
-            event=instance,
-            estimated_amount=Money(0, 'NGN'),
-            is_enabled=False
-        )
+        # Get budget amount from temporary attribute (set by serializer)
+        budget_amount = getattr(instance, '_budget_amount', 0)
+        print("Received in Budget: ", budget_amount)
+        # Only create budget if it doesn't already exist
+        if not hasattr(instance, 'budget'):
+            Budget.objects.create(
+                event=instance,
+                estimated_amount=Money(budget_amount, 'NGN'),
+                is_enabled=False  # or False, depending on your business logic
+            )
+        
+        # Clean up the temporary attribute
+        if hasattr(instance, '_budget_amount'):
+            delattr(instance, '_budget_amount')

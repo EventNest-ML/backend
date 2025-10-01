@@ -35,11 +35,38 @@ class EventDetailSerializer(serializers.ModelSerializer):
     updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
     collaborators = CollaboratorSerializer(source='collaborator_set', many=True, read_only=True)
     budget_id = serializers.CharField(source='budget.id', read_only=True)
+    budget_amount = serializers.DecimalField(
+        max_digits=14, 
+        decimal_places=2, 
+        write_only=True,
+        required=False,
+        allow_null=True,
+        default=0,
+        help_text="Initial budget amount for the event in NGN"
+    )
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'location', 'type', 'notes', 'owner', 'start_date', 'end_date', 'updated_by', 'collaborators', 'budget_id']
-        read_only_fields = ['id', 'owner', 'updated_by', 'collaborators']
+        fields = fields = ['id', 'name', 'location', 'type', 'notes', 'owner', 'start_date', 'end_date', 'updated_by', 'collaborators', 'budget_id', 'budget_amount']
+        read_only_fields = ['id', 'owner', 'updated_by', 'collaborators', 'budget_id']
+    
+    def create(self, validated_data):
+        # Extract budget_amount (won't be saved to Event model)
+        budget_amount = validated_data.pop('budget_amount', 0)
+        print("Budget Amount:", budget_amount)
+        
+        # Create the Event instance WITHOUT saving yet
+        event = Event(**validated_data)
+        
+        # Store budget amount on the instance BEFORE saving
+        event._budget_amount = budget_amount
+        print("Budget amount stored on event instance:", event._budget_amount)
+        
+        # Now save - this triggers the signal with _budget_amount available
+        event.save()
+        print("Event saved:", event.id)
+        
+        return event
 
     def validate(self, data):
         request = self.context.get("request")

@@ -26,3 +26,4 @@ watchdog
 django-notifications-hq
 channels[daphne]
 django-money==3.5.4
+django-imagekit

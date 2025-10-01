@@ -2,7 +2,6 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from notifications.models import Notification
-from django.contrib.auth.models import AnonymousUser
 from apps.user_notifications.serializers import NotificationSerializer
 
 
@@ -10,6 +9,7 @@ from apps.user_notifications.serializers import NotificationSerializer
 class NotificationConsumer(AsyncWebsocketConsumer):
     
     async def connect(self):
+        from django.contrib.auth.models import AnonymousUser
         print("Connecting User...")
         self.user = self.scope.get("user", AnonymousUser())
         print(self.user)

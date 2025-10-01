@@ -1,12 +1,12 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from django.contrib.auth.models import AnonymousUser
 from .models import Expense, TypingStatus, Comment, Collaborator
 
 
 class ExpenseCommentConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        from django.contrib.auth.models import AnonymousUser
         self.user = self.scope.get("user", AnonymousUser())
         self.expense_id = self.scope['url_route']['kwargs']['expense_id']
         self.room_group_name = f'expense_{self.expense_id}_comments'

@@ -1,6 +1,7 @@
 from pathlib import Path
 import environ
 from decouple import config
+from celery.schedules import crontab
 
 env = environ.Env(
     DEBUG=(bool, False)
@@ -42,6 +43,7 @@ THIRD_PARTY_APPS = [
     'notifications',
     'channels',
     'djmoney',
+    'imagekit',
 ]
 
 
@@ -53,7 +55,6 @@ LOCAL_APPS = [
     'apps.contacts',
     'apps.user_notifications',
 ]
-
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -314,16 +315,8 @@ SWAGGER_SETTINGS = {
 
 
 CELERY_BEAT_SCHEDULE = {
-    'send_scheduled_notifications': {
-        'task': 'apps.user_notifications.tasks.send_scheduled_notifications',
-        'schedule': 3600.0,  # Run every minute
-    },
-    'check_due_events': {
-        'task': 'apps.user_notifications.tasks.check_due_events',
-        'schedule': 3600.0,  # Run every hour
-    },
-    'check_due_tasks': {
-        'task': 'apps.user_notifications.tasks.check_due_tasks',
-        'schedule': 3600.0,  # Run every hour
+    'send-due-reminders': {
+        'task': 'apps.user_notifications.tasks.send_due_reminders',
+        'schedule': crontab(minute=0, hour='*'),
     },
 }
