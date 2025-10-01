@@ -1,5 +1,6 @@
 from rest_framework import serializers
 import uuid
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from .models import Event, Invitation, Collaborator
@@ -24,7 +25,7 @@ class EventListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'date', 'location', 'owner']
+        fields = ['id', 'name', 'type', 'location', 'start_date', 'end_date', 'owner']
 
 class EventDetailSerializer(serializers.ModelSerializer):
     """
@@ -36,9 +37,31 @@ class EventDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'date', 'location', 'notes', 'owner', 'updated_by', 'collaborators']
+        fields = ['id', 'name', 'location', 'type', 'notes', 'owner', 'start_date', 'end_date', 'updated_by', 'collaborators']
         read_only_fields = ['id', 'owner', 'updated_by', 'collaborators']
 
+    def validate(self, data):
+        request = self.context.get("request")
+        if request and request.method not in ("POST", "PUT", "PATCH"):
+            # Skip validation on non-create/update operations (like GET, DELETE)
+            return data
+
+        now = timezone.now()
+        start_date = data.get("start_date", getattr(self.instance, "start_date", None))
+        end_date = data.get("end_date", getattr(self.instance, "end_date", None))
+        status = data.get("status", getattr(self.instance, "status", None))
+
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError("Start date cannot be later than end date.")
+
+        if status == "ongoing" and end_date and end_date < now:
+            raise serializers.ValidationError("An event with an end date in the past cannot be marked as ongoing.")
+
+        if status == "completed" and end_date and end_date >= now:
+            raise serializers.ValidationError("An event that has not ended cannot be marked as completed.")
+
+        return data
+    
 class InvitationCreateSerializer(serializers.Serializer):
     """
     Serializer for creating and sending an invitation.

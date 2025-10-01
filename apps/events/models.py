@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -35,7 +36,8 @@ class Event(TimeStampedUUIDModel):
     )
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=200)
-    date = models.DateTimeField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
     location = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="ongoing")
@@ -54,6 +56,8 @@ class Event(TimeStampedUUIDModel):
         related_name='events_collaborating'
     )
 
+    
+    
     def __str__(self):
         return self.name
 
