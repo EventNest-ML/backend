@@ -1,4 +1,6 @@
 import uuid
+import json
+from urllib.parse import urlencode, quote
 from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -36,6 +38,11 @@ class Event(TimeStampedUUIDModel):
     )
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=200)
+    # budget = models.OneToOneField(
+    #     Budget,
+    #     on_delete=models.CASCADE,
+    #     related_name="event"
+    # )
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     location = models.CharField(max_length=255, blank=True)
@@ -106,9 +113,27 @@ class Invitation(models.Model):
         return self.expires_at > timezone.now()  # shows if the invitation link has expired or not
 
     def get_absolute_url(self):
-        # base_url = reverse('invitation-retrieve')
-        query_string = urlencode({'token': str(self.token)})
-        return f"/invites?{query_string}" #So that it matches with the frontend endpoint
+        """
+        Build an invitation URL with a JSON payload encoded into the query string.
+        """
+        collaborators = [ c.get_full_name for c in self.event.collaborators.all()] if self.event else [] 
+        print("collab:  ", collaborators)
+        data = {
+        "token": str(self.token),
+        "event_name": self.event.name if self.event else None,
+        "event_owner": self.event.owner.get_full_name if self.event else None,
+        "event_type": self.event.type if self.event else None,
+        "event_location":self.event.location if self.event else None,
+        "start_date":self.event.start_date.isoformat() if self.event else None,
+        "end_date":self.event.end_date.isoformat() if self.event else None,
+        "estimated_budget": 50000,
+        "collaborators":collaborators
+        }
+        
+        # Encode JSON safely for a query string
+        json_data = json.dumps(data)
+        encoded_data = quote(json_data)
+        return f"/invites?{encoded_data}" #So that it matches with the frontend endpoint
     
     def get_full_invitation_url(self):
         
