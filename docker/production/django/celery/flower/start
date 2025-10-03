@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+
+worker_ready() {
+    celery -A eventnest inspect ping
+}
+
+until worker_ready; do
+    >&2 echo 'Celery workers not available :-('
+    sleep 2
+done
+
+>&2 echo 'Celery workers ready :-)'
+
+celery -A eventnest --broker="${CELERY_BROKER_URL}" flower

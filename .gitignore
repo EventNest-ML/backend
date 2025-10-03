@@ -158,6 +158,7 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+big*json
 
 # Pyre type checker
 .pyre/
@@ -192,12 +193,10 @@ cython_debug/
 .env.production
 staticfiles/
 mediafiles/
-docker/production/
 frontend/
 .dockerignore
 *.config
 *.secret
-k8s/
 
 # Ruff stuff:
 .ruff_cache/
@@ -213,3 +212,5 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+terraform/
+creds/

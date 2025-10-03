@@ -1,0 +1,25 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: filestore-csi
+provisioner: filestore.csi.storage.gke.io
+parameters:
+  tier: standard
+  network: projects/big-axiom-469111-n3/global/networks/big-axiom-469111-n3-vpc
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+
+---
+# kubernetes/api-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: api-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: filestore-csi
