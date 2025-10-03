@@ -193,12 +193,10 @@ cython_debug/
 .env.production
 staticfiles/
 mediafiles/
-docker/production/
 frontend/
 .dockerignore
 *.config
 *.secret
-k8s/
 
 # Ruff stuff:
 .ruff_cache/
