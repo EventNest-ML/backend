@@ -26,6 +26,8 @@ RUN echo "Installing requirements..."
 COPY requirements/*.txt .
 
 RUN pip install -r development.txt
+RUN pip install setuptools
+RUN pip install git+https://github.com/django-notifications/django-notifications.git@master
 
 COPY ./docker/local/django/entrypoint /entrypoint
 RUN sed -i 's/\r$//g' /entrypoint

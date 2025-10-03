@@ -49,6 +49,7 @@ class EventListCreateAPIView(APIView):
         serializer = EventDetailSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             event = serializer.save()
+            print("EventID: ", event.id)
             # The creator automatically becomes an 'Admin' collaborator
             Collaborator.objects.create(user=request.user, event=event, role=Collaborator.Role.ADMIN)
             return Response(serializer.data, status=status.HTTP_201_CREATED)

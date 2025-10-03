@@ -26,6 +26,8 @@ RUN echo "Installing requirements..."
 COPY requirements/*.txt .
 
 RUN pip install -r production.txt
+RUN pip install setuptools
+RUN pip install git+https://github.com/django-notifications/django-notifications.git@master
 
 COPY ./docker/production/django/entrypoint /entrypoint
 RUN sed -i 's/\r$//g' /entrypoint
@@ -48,5 +50,7 @@ RUN sed -i 's/\r$//g' /start-flower
 RUN chmod +x /start-flower
 
 COPY . .
+
+EXPOSE 8000
 
 ENTRYPOINT [ "/entrypoint" ]

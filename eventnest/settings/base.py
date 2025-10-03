@@ -1,6 +1,7 @@
 from pathlib import Path
 import environ
 from decouple import config
+from celery.schedules import crontab
 
 env = environ.Env(
     DEBUG=(bool, False)
@@ -11,6 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Application definition
 DJANGO_APPS = [
+    'daphne',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -38,15 +40,20 @@ THIRD_PARTY_APPS = [
     # 'allauth.socialaccount.providers.facebook',
     'djcelery_email',
     'django_celery_beat',
+    'notifications',
+    'channels',
+    'djmoney',
+    'imagekit',
 ]
+
 
 LOCAL_APPS = [
     'apps.budgets',
     'apps.events',
     'apps.authentication',
     'apps.tasks',
-    'apps.notifications',
     'apps.contacts',
+    'apps.user_notifications',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -81,7 +88,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "eventnest.wsgi.application"
+ASGI_APPLICATION = "eventnest.asgi.application"
 
 # Database
 DATABASES = {
@@ -261,8 +268,8 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # Redirect URLs (for testing without frontend)
-LOGIN_REDIRECT_URL = '/accounts/profile/'  # Django admin or custom success page
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+# LOGIN_REDIRECT_URL = '/accounts/profile/'  # Django admin or custom success page
+# LOGOUT_REDIRECT_URL = '/accounts/login/'
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # Alternative: redirect to admin for testing
@@ -282,6 +289,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5500",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
 
 # Frontend URL for email templates
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
@@ -303,4 +311,12 @@ SWAGGER_SETTINGS = {
         }
     },
     'USE_SESSION_AUTH': False,
+}
+
+
+CELERY_BEAT_SCHEDULE = {
+    'send-due-reminders': {
+        'task': 'apps.user_notifications.tasks.send_due_reminders',
+        'schedule': crontab(minute=0, hour='*'),
+    },
 }

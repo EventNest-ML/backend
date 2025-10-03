@@ -1,0 +1,10 @@
+{{ notification.title }}
+
+{{ notification.message }}
+
+{% if related_object %}Related to: {{ related_object }}{% endif %}
+{% if data.due_date %}Due Date: {{ data.due_date|date:"M d, Y H:i" }}{% endif %}
+
+---
+This notification was sent from your project management system.
+To manage your notification preferences, log into your account.

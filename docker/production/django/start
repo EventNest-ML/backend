@@ -7,4 +7,4 @@ set -o nounset
 python3 manage.py migrate --no-input
 python3 manage.py collectstatic --no-input
 python3 manage.py create_missing_budgets
-python3 manage.py runserver 0.0.0.0:8000
+daphne -b 0.0.0.0 -p 8000 eventnest.asgi:application
