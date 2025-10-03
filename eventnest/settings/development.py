@@ -5,7 +5,7 @@ environ.Env.read_env(BASE_DIR / '.env')
 SECRET_KEY = env("SECRET_KEY")
 
 
-ALLOWED_HOSTS = []#env("ALLOWED_HOSTS").split(" ")
+ALLOWED_HOSTS = ["*"]#env("ALLOWED_HOSTS").split(" ")
 
 DEBUG = True
 
@@ -34,5 +34,12 @@ DATABASES = {
         'PASSWORD': env('POSTGRES_PASSWORD'),
         'HOST': env('POSTGRES_HOST'),
         'PORT': env('POSTGRES_PORT'),
+    }
+}
+
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
     }
 }

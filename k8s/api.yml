@@ -19,7 +19,8 @@ spec:
         - name: celery-worker
           image: gcr.io/big-axiom-469111-n3/eventnest-api:master
           command: ["celery"]
-          args: ["-A", "eventnest", "worker", "--loglevel=info", "--concurrency=4"]
+          args:
+            ["-A", "eventnest", "worker", "--loglevel=info", "--concurrency=4"]
           envFrom:
             - configMapRef:
                 name: eventnest-config
@@ -44,7 +45,7 @@ spec:
             failureThreshold: 3
           readinessProbe:
             exec:
-                command:
+              command:
                 - /bin/sh
                 - -c
                 - "celery -A eventnest inspect active -d celery@$HOSTNAME --timeout=15"
@@ -54,7 +55,6 @@ spec:
             failureThreshold: 3
 
 ---
-
 # kubernetes/api-server.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -75,6 +75,7 @@ spec:
       containers:
         - name: api
           image: gcr.io/big-axiom-469111-n3/eventnest-api:master
+          imagePullPolicy: Always
           command: ["/start"]
           envFrom:
             - configMapRef:
@@ -93,14 +94,23 @@ spec:
               mountPath: /app/staticfiles
             - name: api-storage
               mountPath: /app/mediafiles
+            - name: gcp-credentials
+              mountPath: /secrets
+              readOnly: true
           ports:
             - containerPort: 8000
       volumes:
         - name: api-storage
           persistentVolumeClaim:
             claimName: api-pvc
----
+        - name: gcp-credentials
+          secret:
+            secretName: gcp-creds
+            items:
+              - key: gcp-credentials.json
+                path: gcp-credentials.json
 
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -120,6 +130,7 @@ spec:
       containers:
         - name: nginx
           image: gcr.io/big-axiom-469111-n3/webserver:master
+          imagePullPolicy: Always
           resources:
             requests:
               memory: "512Mi"
@@ -138,8 +149,6 @@ spec:
         - name: api-storage
           persistentVolumeClaim:
             claimName: api-pvc
-
-
 
 ---
 # kubernetes/celery-beat.yaml
@@ -161,7 +170,8 @@ spec:
     spec:
       containers:
         - name: celery-beat
-          image: gcr.io/big-axiom-469111-n3/eventnest-api:v9
+          image: gcr.io/big-axiom-469111-n3/eventnest-api:master
+          imagePullPolicy: Always
           command: ["/start-celerybeat"]
           envFrom:
             - configMapRef:
@@ -183,7 +193,6 @@ spec:
           persistentVolumeClaim:
             claimName: api-pvc
 
-
 ---
 # kubernetes/flower.yaml
 apiVersion: apps/v1
@@ -204,7 +213,8 @@ spec:
     spec:
       containers:
         - name: flower
-          image: gcr.io/big-axiom-469111-n3/eventnest-api:v9
+          image: gcr.io/big-axiom-469111-n3/eventnest-api:master
+          imagePullPolicy: Always
           command: ["/start-flower"]
           envFrom:
             - configMapRef:
@@ -275,7 +285,7 @@ spec:
     kind: Deployment
     name: celery-worker
   minReplicas: 1
-  maxReplicas: 3
+  maxReplicas: 1
   metrics:
     - type: Resource
       resource:
