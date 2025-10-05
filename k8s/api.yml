@@ -18,7 +18,9 @@ spec:
       containers:
         - name: celery-worker
           image: gcr.io/big-axiom-469111-n3/eventnest-api:master
+          imagePullPolicy: Always
           command: ["celery"]
+          imagePullPolicy: Always
           args:
             ["-A", "eventnest", "worker", "--loglevel=info", "--concurrency=4"]
           envFrom:

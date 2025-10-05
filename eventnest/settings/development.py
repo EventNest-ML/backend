@@ -38,8 +38,15 @@ DATABASES = {
 }
 
 
+REDIS_HOST = env('REDIS_HOST')
+REDIS_PORT = env('REDIS_PORT')
+
+# Channels Configuration
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
-    }
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [f"redis://{REDIS_HOST}:{REDIS_PORT}/2"],
+        },
+    },
 }

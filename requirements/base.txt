@@ -16,6 +16,7 @@ social-auth-app-django
 psycopg2-binary==2.9.10
 PyJWT==2.9.0
 redis
+channels-redis
 celery
 flower
 django-celery-email

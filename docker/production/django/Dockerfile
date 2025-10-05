@@ -16,6 +16,7 @@ RUN apt-get update \
     && apt-get install -y gettext \
     && apt-get install -y gcc postgresql \
     && apt-get install -y netcat-openbsd \
+    && apt-get install -y redis-tools \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/*
 
@@ -50,5 +51,7 @@ RUN sed -i 's/\r$//g' /start-flower
 RUN chmod +x /start-flower
 
 COPY . .
+
+EXPOSE 8000
 
 ENTRYPOINT [ "/entrypoint" ]

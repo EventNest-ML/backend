@@ -1,8 +1,11 @@
 from .base import *
 import environ
+import ssl
 
 env = environ.Env()
-environ.Env.read_env(BASE_DIR / '.env.production')
+# environ.Env.read_env(BASE_DIR / '.env.production')
+print('postgres_host: ', env('POSTGRES_HOST'))
+print('GAC: ', env('GOOGLE_APPLICATION_CREDENTIALS'))
 
 # Security
 SECRET_KEY = env("SECRET_KEY")
@@ -10,19 +13,24 @@ ALLOWED_HOSTS = env("ALLOWED_HOSTS").split(" ")
 DEBUG = env.bool('DEBUG', default=False)
 
 # Google Cloud Storage Configuration
-DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 GS_BUCKET_NAME = env('GS_BUCKET_NAME')
 GS_PROJECT_ID = env('GS_PROJECT_ID')
 GS_DEFAULT_ACL = 'publicRead'  # Make static files publicly accessible
 GS_QUERYSTRING_AUTH = False  # Serve static files without signed URLs
 GS_FILE_OVERWRITE = False  # Prevent overwriting files with the same name
-
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+    },
+}
 # Static Files
 STATIC_URL = f"https://storage.googleapis.com/{env('GS_BUCKET_NAME')}/static/"
 # STATIC_ROOT is not needed for GCS, but keep for collectstatic locally if needed
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = []  # Adjust if you have local static directories for development
+# STATIC_ROOT = BASE_DIR / 'staticfiles'
+# STATICFILES_DIRS = []  # Adjust if you have local static directories for development
 
 # Media Files
 MEDIA_URL = f"https://storage.googleapis.com/{env('GS_BUCKET_NAME')}/media/"
@@ -58,13 +66,21 @@ CELERY_REDIS_BACKEND_USE_SSL = {
 }
 REDIS_HOST = env('REDIS_HOST')
 REDIS_PORT = env('REDIS_PORT')
+REDIS_PASSWORD = env('REDIS_PASSWORD')
+REDIS_USER = env('REDIS_USER', default='')
 
 # Channels Configuration
+if REDIS_USER:
+    redis_url = f"rediss://{REDIS_USER}:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/2"
+else:
+    redis_url = f"rediss://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/2"
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "hosts": [redis_url],
+            "ssl_cert_reqs": ssl.CERT_OPTIONAL,
         },
     },
 }
