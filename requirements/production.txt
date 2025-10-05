@@ -5,4 +5,4 @@ whitenoise
 gunicorn
 channels-redis
 google-cloud-storage
-django-storages
+django-storages[google]

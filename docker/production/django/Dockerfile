@@ -51,4 +51,6 @@ RUN chmod +x /start-flower
 
 COPY . .
 
+EXPOSE 8000
+
 ENTRYPOINT [ "/entrypoint" ]
