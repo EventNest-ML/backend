@@ -121,27 +121,8 @@ class Invitation(models.Model):
         return self.expires_at > timezone.now()  # shows if the invitation link has expired or not
 
     def get_absolute_url(self):
-        """
-        Build an invitation URL with a JSON payload encoded into the query string.
-        """
-        collaborators = [ c.get_full_name for c in self.event.collaborators.all()] if self.event else [] 
-        print("collab:  ", collaborators)
-        data = {
-        "token": str(self.token),
-        "event_name": self.event.name if self.event else None,
-        "event_owner": self.event.owner.get_full_name if self.event else None,
-        "event_type": self.event.type if self.event else None,
-        "event_location":self.event.location if self.event else None,
-        "start_date":self.event.start_date.isoformat() if self.event else None,
-        "end_date":self.event.end_date.isoformat() if self.event else None,
-        "estimated_budget": 50000,
-        "collaborators":collaborators
-        }
-        
-        # Encode JSON safely for a query string
-        json_data = json.dumps(data)
-        encoded_data = quote(json_data)
-        return f"/invites?{encoded_data}" #So that it matches with the frontend endpoint
+        token = str(self.token)
+        return f"/invites?token={token}" #So that it matches with the frontend endpoint
     
     def get_full_invitation_url(self):
         
@@ -149,7 +130,7 @@ class Invitation(models.Model):
         
         protocol = 'https' if getattr(settings, 'USE_HTTPS', False) else 'http'
         relative_url = self.get_absolute_url()
-        # print(f"Relative url {relative_url}")
+        print(f"Relative url {relative_url}")
         
         return f"{protocol}://{domain}{relative_url}"
     
