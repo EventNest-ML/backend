@@ -137,7 +137,7 @@ class InvitationRetrieveAPIView(APIView):
     Corresponds to User Story 3b.
     Retrieves invitation details for display before user accepts/declines.
     """
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly] #I removed the authentication so that the invitee can the details without any authorization
+    permission_classes = [permissions.IsAuthenticated, IsEventOwnerOrCollaboratorReadOnly]
     @swagger_auto_schema(
         operation_summary="Displays event's details before  accepting/declining an Invitation",
         manual_parameters=[
